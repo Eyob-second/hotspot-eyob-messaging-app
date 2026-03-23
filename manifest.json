@@ -1,0 +1,21 @@
+{
+  "name": "Hotspot Messaging app",
+  "short_name": "H Messaging app",
+  "description": "How we connect via hotspot",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0000ff",
+  "icons": [
+    {
+      "src": "Icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "Icon.png",
+      "sizes": "512x512",
+      "type": "image/jpg"
+    }
+  ]
+}
