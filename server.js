@@ -9,7 +9,7 @@ wss.on("connection", (ws) => {
   console.log("New client connected");
 
   ws.on("message", (message) => {
-    console.log("Received:", message.toString());
+    alert("Received:", message.toString());
 
     // Broadcast to all clients
     clients.forEach(client => {
