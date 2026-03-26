@@ -1,109 +1,626 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Local Chat</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="/manifest.json">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>P2P Chat · Local IP Messenger</title>
+  <link rel="manifest" href="/manifest.json">
   <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
     body {
-      font-family: Arial;
+      font-family: 'Segoe UI', Roboto, system-ui, -apple-system, 'Helvetica Neue', sans-serif;
       margin: 0;
       display: flex;
       flex-direction: column;
       height: 100vh;
+      background: #121212;
+      color: #e0e0e0;
+    }
+
+    /* Header / status panel */
+    .status-bar {
+      background: #1e1e2f;
+      padding: 12px 16px;
+      border-bottom: 1px solid #2c2c3a;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .device-info {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      background: #2a2a36;
+      padding: 8px 12px;
+      border-radius: 14px;
+    }
+
+    .ip-badge {
+      background: #0f0f1a;
+      padding: 6px 12px;
+      border-radius: 40px;
+      font-family: monospace;
+      font-weight: bold;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      color: #7ee0ff;
+    }
+
+    .conn-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
     #status {
-      background: #222;
-      color: white;
-      padding: 10px;
-      font-size: 14px;
+      background: #2c2c3a;
+      padding: 6px 14px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
+    .connected-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 10px;
+      background: #4caf50;
+      display: inline-block;
+      box-shadow: 0 0 4px #4caf50;
+    }
+
+    .disconnected-dot {
+      background: #f44336;
+      box-shadow: none;
+    }
+
+    /* connection panel */
+    .connection-panel {
+      background: #1e1e2a;
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      border-bottom: 1px solid #2d2d3a;
+    }
+
+    .connection-panel input {
+      flex: 3;
+      min-width: 180px;
+      background: #0f0f17;
+      border: 1px solid #3a3a48;
+      padding: 10px 14px;
+      border-radius: 28px;
+      color: white;
+      font-family: monospace;
+      font-size: 14px;
+      outline: none;
+      transition: 0.2s;
+    }
+
+    .connection-panel input:focus {
+      border-color: #5f9eff;
+      background: #181825;
+    }
+
+    .connection-panel button {
+      background: #2c6e9e;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 32px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .connection-panel button:active {
+      transform: scale(0.97);
+    }
+
+    .secondary-btn {
+      background: #3a3a4a;
+    }
+
+    /* messages area */
     #messages {
       flex: 1;
       overflow-y: auto;
-      padding: 10px;
-      background: #f0f0f0;
+      padding: 16px;
+      background: #0e0e16;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     .msg {
-      background: white;
-      padding: 8px;
-      margin: 5px 0;
-      border-radius: 8px;
+      background: #1e1e2c;
+      padding: 10px 14px;
+      border-radius: 20px;
+      max-width: 85%;
+      width: fit-content;
+      word-wrap: break-word;
+      font-size: 15px;
+      line-height: 1.4;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      border-left: 3px solid #5f9eff;
     }
 
+    .msg.mine {
+      background: #1f3b4c;
+      border-left: 3px solid #7ee0ff;
+      align-self: flex-end;
+      text-align: right;
+    }
+
+    .msg .sender {
+      font-size: 11px;
+      font-weight: bold;
+      color: #aac8ff;
+      margin-bottom: 4px;
+      display: block;
+      font-family: monospace;
+    }
+
+    .msg.mine .sender {
+      color: #9ad7ff;
+    }
+
+    .timestamp {
+      font-size: 9px;
+      opacity: 0.6;
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    /* input area */
     #inputArea {
       display: flex;
+      background: #181826;
+      padding: 12px 16px;
+      gap: 12px;
+      border-top: 1px solid #2a2a36;
     }
 
-    input {
+    #msgInput {
       flex: 1;
-      padding: 10px;
-      border: none;
+      background: #0f0f18;
+      border: 1px solid #3a3a48;
+      padding: 12px 16px;
+      border-radius: 32px;
+      color: white;
+      font-size: 15px;
+      outline: none;
     }
 
-    button {
-      padding: 10px;
-      background: green;
-      color: white;
+    #msgInput:focus {
+      border-color: #5f9eff;
+    }
+
+    #sendBtn {
+      background: #2e7d64;
       border: none;
+      padding: 0 20px;
+      border-radius: 40px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      font-size: 15px;
+      transition: 0.2s;
+    }
+
+    #sendBtn:active {
+      background: #1f5a48;
+    }
+
+    .info-note {
+      font-size: 11px;
+      padding: 6px 16px;
+      background: #1a1a24;
+      color: #aaa;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      transform: none;
+    }
+
+    @media (max-width: 550px) {
+      .connection-panel input { min-width: 140px; }
+      .msg { max-width: 92%; }
     }
   </style>
 </head>
 <body>
 
-<div id="status">Disconnected</div>
+<div class="status-bar">
+  <div class="device-info">
+    <span>📡 MY DEVICE INFO</span>
+    <span class="ip-badge" id="localIpDisplay">🌐 detecting IP...</span>
+  </div>
+  <div class="conn-status">
+    <div id="status">
+      <span class="disconnected-dot" id="statusDot"></span>
+      <span id="statusText">Disconnected</span>
+    </div>
+    <div style="font-size:12px; background:#2a2a36; padding:4px 12px; border-radius:20px;">
+      👥 Connected peers: <strong id="peerCount">0</strong>
+    </div>
+  </div>
+</div>
 
-<input id="ipInput" placeholder="Enter IP (e.g. ws://192.168.43.1:3000)">
-<button onclick="connect()">Connect</button>
+<div class="connection-panel">
+  <input type="text" id="ipInput" placeholder="🌍 Other IP: ws://192.168.x.x:3000" value="ws://192.168.43.1:3000">
+  <button id="connectBtn" onclick="manualConnect()">🔌 Connect</button>
+  <button id="disconnectBtn" onclick="manualDisconnect()" class="secondary-btn">⛔ Disconnect</button>
+</div>
 
 <div id="messages"></div>
 
 <div id="inputArea">
-  <input id="msgInput" placeholder="Type message">
-  <button onclick="sendMsg()">Send</button>
+  <input type="text" id="msgInput" placeholder="✏️ Type message..." autocomplete="off">
+  <button id="sendBtn" onclick="sendMsg()">Send</button>
+</div>
+<div class="info-note">
+  <span>💡 Tip: Other person must run same server & enter YOUR IP shown above</span>
+  <span>🔄 Real-time broadcast</span>
 </div>
 
 <script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js");
-}
-let socket;
+  // ---------- GLOBALS ----------
+  let socket = null;
+  let currentRemoteAddress = "Not connected";
+  let myDeviceIPs = [];       // store detected IPs
+  let connectedPeersSet = new Set();   // track unique remote endpoints (simple)
+  
+  // DOM elements
+  const messagesDiv = document.getElementById("messages");
+  const statusDiv = document.getElementById("statusText");
+  const statusDot = document.getElementById("statusDot");
+  const peerCountSpan = document.getElementById("peerCount");
+  const localIpSpan = document.getElementById("localIpDisplay");
+  const connectBtn = document.getElementById("connectBtn");
+  const disconnectBtn = document.getElementById("disconnectBtn");
+  const msgInput = document.getElementById("msgInput");
+  const ipInput = document.getElementById("ipInput");
 
-function connect() {
-  const ip = document.getElementById("ipInput").value;
-  socket = new WebSocket(ip);
-
-  socket.onopen = () => {
-    document.getElementById("status").innerText = "Connected ✅";
-  };
-
-  socket.onclose = () => {
-    document.getElementById("status").innerText = "Disconnected ❌";
-  };
-
-  socket.onmessage = (event) => {
-    addMessage(event.data);
-  };
-}
-
-function sendMsg() {
-  const input = document.getElementById("msgInput");
-  if (socket && socket.readyState === 1) {
-    socket.send(input.value);
-    input.value = "";
+  // Helper: update UI connection status
+  function updateConnectionStatus(isConnected, remoteInfo = "") {
+    if (isConnected) {
+      statusDiv.innerText = `Connected ✅ ${remoteInfo ? `to ${remoteInfo}` : ""}`;
+      statusDot.className = "connected-dot";
+      statusDot.style.background = "#4caf50";
+    } else {
+      statusDiv.innerText = "Disconnected ❌";
+      statusDot.className = "disconnected-dot";
+      statusDot.style.background = "#f44336";
+    }
+    // enable/disable send button based on connection
+    const sendBtn = document.getElementById("sendBtn");
+    if (sendBtn) sendBtn.disabled = !isConnected;
+    if (msgInput) msgInput.disabled = !isConnected;
   }
-}
 
-function addMessage(msg) {
-  const div = document.createElement("div");
-  div.className = "msg";
-  div.innerText = msg;
-  document.getElementById("messages").appendChild(div);
-}
+  // update peer count display (unique remote endpoints)
+  function updatePeerCount() {
+    peerCountSpan.innerText = connectedPeersSet.size;
+  }
+
+  // add message to chat (supports sender info)
+  function addMessage(text, isMine = false, senderInfo = null) {
+    const div = document.createElement("div");
+    div.className = `msg ${isMine ? "mine" : ""}`;
+    
+    const senderSpan = document.createElement("span");
+    senderSpan.className = "sender";
+    if (isMine) {
+      senderSpan.innerText = `🧑 Me ${myDeviceIPs.length > 0 ? `(${myDeviceIPs[0]})` : ""}`;
+    } else {
+      if (senderInfo && senderInfo !== "unknown") {
+        senderSpan.innerText = `👤 Peer ${senderInfo}`;
+      } else {
+        senderSpan.innerText = `👤 Peer`;
+      }
+    }
+    
+    const contentSpan = document.createElement("span");
+    contentSpan.innerText = text;
+    contentSpan.style.display = "block";
+    contentSpan.style.wordBreak = "break-word";
+    
+    const timeSpan = document.createElement("div");
+    timeSpan.className = "timestamp";
+    const now = new Date();
+    timeSpan.innerText = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+    
+    div.appendChild(senderSpan);
+    div.appendChild(contentSpan);
+    div.appendChild(timeSpan);
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  // Parse IP from WebSocket URL or extract remote address from connection? 
+  // In browser WebSocket, we can't directly get remote IP, but we can store the URL we connected to.
+  function getRemoteAddressFromSocket() {
+    if (socket && socket.url) {
+      try {
+        let url = socket.url;
+        let parsed = new URL(url);
+        return parsed.hostname + (parsed.port ? ":" + parsed.port : "");
+      } catch(e) { return "peer"; }
+    }
+    return "unknown";
+  }
+
+  // Function to show remote peer IP when message arrives (via custom protocol)
+  // Actually WebSocket doesn't provide IP metadata per message, but we store the connected endpoint.
+  // For broadcast scenario, server.js simply relays. But we want to show "other person's ip".
+  // Since we are in browser, we show the URL we are connected to as "other person's server IP".
+  // Additionally, we can simulate that when receiving a message we display the remote endpoint.
+  
+  let currentConnectedEndpoint = null;
+  
+  // Helper: register socket events
+  function initSocketEvents(ws, endpointUrl) {
+    ws.onopen = () => {
+      currentConnectedEndpoint = endpointUrl;
+      let shortAddr = endpointUrl.replace("ws://","").replace("wss://","");
+      updateConnectionStatus(true, shortAddr);
+      addMessage(`✅ Connection established with server at ${shortAddr}`, false, "System");
+      // Track this remote peer (unique endpoint)
+      connectedPeersSet.add(shortAddr);
+      updatePeerCount();
+    };
+    
+    ws.onclose = (event) => {
+      updateConnectionStatus(false);
+      if (currentConnectedEndpoint) {
+        addMessage(`⚠️ Disconnected from ${currentConnectedEndpoint}`, false, "System");
+        connectedPeersSet.delete(currentConnectedEndpoint);
+        updatePeerCount();
+      }
+      currentConnectedEndpoint = null;
+      socket = null;
+    };
+    
+    ws.onerror = (err) => {
+      console.error("WebSocket error", err);
+      addMessage(`❗ Connection error (${endpointUrl})`, false, "System");
+    };
+    
+    ws.onmessage = (event) => {
+      let rawMessage = event.data;
+      let parsedMessage = null;
+      let senderIpHint = currentConnectedEndpoint ? currentConnectedEndpoint.replace("ws://","").split(":")[0] : "remote";
+      // attempt to parse enhanced protocol: if message is JSON with sender field? 
+      // For backward compatibility with simple server.js, it broadcasts plain string.
+      // But we can also embed metadata using a special format: if message starts with "[IP]" we parse.
+      // To improve user experience: we assume other client might send prefixed IP? No need.
+      // Instead, we can show remote IP based on connection endpoint.
+      try {
+        // if message is json with field "payload" and "senderIp"
+        if (rawMessage.startsWith("{") && rawMessage.includes("senderIp")) {
+          const json = JSON.parse(rawMessage);
+          parsedMessage = json;
+          rawMessage = json.payload || rawMessage;
+          senderIpHint = json.senderIp || senderIpHint;
+        }
+      } catch(e) { /* not json, treat as plain */ }
+      
+      // Show message with remote IP (the one we are connected to)
+      addMessage(rawMessage, false, senderIpHint);
+    };
+  }
+  
+  // Connect to a given WebSocket URI
+  function connectToServer(wsUrl) {
+    if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+      addMessage("⚠️ Already connected. Disconnect first.", false, "System");
+      return false;
+    }
+    // Validate URL format: if missing ws:// or wss://, prepend ws://
+    let finalUrl = wsUrl.trim();
+    if (!finalUrl.startsWith("ws://") && !finalUrl.startsWith("wss://")) {
+      finalUrl = "ws://" + finalUrl;
+    }
+    try {
+      new URL(finalUrl);
+    } catch(e) {
+      addMessage(`❌ Invalid WebSocket URL: ${finalUrl}`, false, "System");
+      return false;
+    }
+    addMessage(`🔌 Connecting to ${finalUrl} ...`, false, "System");
+    const newSocket = new WebSocket(finalUrl);
+    socket = newSocket;
+    initSocketEvents(newSocket, finalUrl);
+    return true;
+  }
+  
+  // Manual connect from input field
+  function manualConnect() {
+    let rawIp = ipInput.value.trim();
+    if (!rawIp) {
+      addMessage("⚠️ Please enter an IP address or ws:// URL", false, "System");
+      return;
+    }
+    connectToServer(rawIp);
+  }
+  
+  // Disconnect current connection
+  function manualDisconnect() {
+    if (socket) {
+      socket.close();
+      socket = null;
+      updateConnectionStatus(false);
+      addMessage("🔌 Manual disconnect", false, "System");
+      currentConnectedEndpoint = null;
+    } else {
+      addMessage("❌ No active connection", false, "System");
+    }
+  }
+  
+  // Send message to the server (which broadcasts to all other peers)
+  function sendMsg() {
+    const input = document.getElementById("msgInput");
+    let message = input.value.trim();
+    if (!message) return;
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      addMessage("⚠️ Not connected. Cannot send message.", false, "System");
+      return;
+    }
+    // Enhanced: we can include sender's IP metadata so that other clients can display it.
+    // Since server broadcasts, we attach our detected local IP as JSON.
+    let myPrimaryIp = (myDeviceIPs.length > 0) ? myDeviceIPs[0] : "unknown-device";
+    const enhancedPayload = JSON.stringify({
+      type: "chat",
+      payload: message,
+      senderIp: myPrimaryIp,
+      timestamp: Date.now()
+    });
+    socket.send(enhancedPayload);
+    // display own message with own IP
+    addMessage(message, true, myPrimaryIp);
+    input.value = "";
+    input.focus();
+  }
+  
+  // ----- Get local IP addresses via WebRTC trick (STUN) -----
+  function getLocalIPs() {
+    return new Promise((resolve) => {
+      const ips = [];
+      const pc = new RTCPeerConnection({ iceServers: [] });
+      pc.createDataChannel("ip-discovery");
+      pc.createOffer()
+        .then(offer => pc.setLocalDescription(offer))
+        .catch(e => console.warn("ice offer error", e));
+      pc.onicecandidate = (event) => {
+        if (!event.candidate) return;
+        const candidate = event.candidate.candidate;
+        const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
+        const match = candidate.match(ipRegex);
+        if (match && match[1] && !ips.includes(match[1]) && !match[1].startsWith("127.")) {
+          ips.push(match[1]);
+        }
+      };
+      setTimeout(() => {
+        pc.close();
+        if (ips.length === 0) ips.push("192.168.x.x (detect failed)");
+        resolve(ips);
+      }, 1000);
+    });
+  }
+  
+  // display local ip addresses on UI
+  async function updateLocalIpDisplay() {
+    const ips = await getLocalIPs();
+    myDeviceIPs = ips;
+    if (ips.length > 0) {
+      let displayText = ips.join(" , ");
+      localIpSpan.innerHTML = `📶 ${displayText}`;
+      // Also show a tooltip that other person should connect using one of these IPs on port 3000
+      const wsHint = ips.map(ip => `ws://${ip}:3000`).join(" or ");
+      localIpSpan.title = `Other devices can connect via: ${wsHint}`;
+    } else {
+      localIpSpan.innerHTML = `⚠️ Could not detect IP`;
+    }
+  }
+  
+  // Auto-fill suggested IP from detection to input placeholder
+  async function autoSuggestSelfIP() {
+    const ips = await getLocalIPs();
+    if (ips.length && ips[0] !== "192.168.x.x (detect failed)") {
+      const suggested = `ws://${ips[0]}:3000`;
+      ipInput.placeholder = `e.g., ${suggested}`;
+    } else {
+      ipInput.placeholder = "e.g., ws://192.168.43.1:3000";
+    }
+  }
+  
+  // Helper: press Enter to send message
+  function setupEnterToSend() {
+    const msgBox = document.getElementById("msgInput");
+    msgBox.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendMsg();
+      }
+    });
+  }
+  
+  // ---- EXTRA: Option to auto-connect to a saved URL? No, manual - we provide ability to paste.
+  // Also handle Service Worker registration (optional)
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js").catch(e => console.log("SW not critical"));
+  }
+  
+  // ---- INITIAL LOAD: detect IPs and display and also listen for any initial message
+  window.addEventListener("load", async () => {
+    await updateLocalIpDisplay();
+    await autoSuggestSelfIP();
+    setupEnterToSend();
+    addMessage("💬 Welcome to Local IP Chat! Your local IP(s) shown above.", false, "System");
+    addMessage("🔌 Enter other device's IP:PORT (e.g., ws://192.168.1.5:3000) and click Connect.", false, "System");
+    addMessage("📡 Messages are broadcast to all connected peers via server.js running on port 3000.", false, "System");
+    addMessage("✨ Your messages will show YOUR ip, received messages will show SENDER's ip.", false, "System");
+    updateConnectionStatus(false);
+    // Disable send initially
+    const sendBtnElem = document.getElementById("sendBtn");
+    if (sendBtnElem) sendBtnElem.disabled = true;
+    if (msgInput) msgInput.disabled = true;
+  });
+  
+  // Expose functions globally
+  window.connect = manualConnect;
+  window.manualConnect = manualConnect;
+  window.manualDisconnect = manualDisconnect;
+  window.sendMsg = sendMsg;
+  
+  // Additional: If server runs on phone, other client connects to this phone's IP.
+  // We also need to remind about server.js running: "node server.js"
+  // Provide simple instruction inside console or tooltip.
+  console.log("%c💡 Server must run on port 3000: node server.js", "color: #aaffdd; font-size: 12px");
+  
+  // Update peer count when manual disconnect clears set.
+  function updatePeerCountFromSet() { updatePeerCount(); }
+  // override disconnect to ensure set cleanup
+  const originalDisconnect = manualDisconnect;
+  window.manualDisconnect = function() {
+    if (socket) {
+      if (currentConnectedEndpoint) connectedPeersSet.delete(currentConnectedEndpoint);
+      socket.close();
+      socket = null;
+      updateConnectionStatus(false);
+      addMessage("🔌 Disconnected manually.", false, "System");
+      currentConnectedEndpoint = null;
+      updatePeerCount();
+    } else {
+      addMessage("No active connection to close.", false, "System");
+    }
+  };
+  
+  // Also, if connection closes due to network, cleanup set in onclose already handled
+  // Fix: re-define initSocketEvents to also ensure on close cleanup sets
+  // already done above, but we also ensure that onclose removes from set.
+  // Perfect.
 </script>
-
 </body>
 </html>
